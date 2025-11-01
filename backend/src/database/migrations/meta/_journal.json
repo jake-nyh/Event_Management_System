@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1760981233807,
+      "tag": "0000_mean_zuras",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1761967662688,
+      "tag": "0001_short_shiva",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761972752509,
+      "tag": "0002_lyrical_golden_guardian",
+      "breakpoints": true
+    }
+  ]
+}
