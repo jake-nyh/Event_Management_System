@@ -10,13 +10,20 @@ import { EventDetail } from './components/events/EventDetail'
 import { EditEventForm } from './components/events/EditEventForm'
 import { TicketManagementPage } from './pages/TicketManagementPage'
 import { TicketPurchasePage } from './pages/TicketPurchasePage'
+import { TicketSalesPage } from './pages/TicketSalesPage'
+import { MyTicketsPage } from './pages/MyTicketsPage'
+import AdminQRValidationPage from './pages/AdminQRValidationPage'
+import AdminDashboardPage from './pages/AdminDashboardPage'
+import EventAnalyticsPage from './pages/EventAnalyticsPage'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { Navigation } from './components/layout/Navigation'
 
 function App() {
   const { isAuthenticated } = useAuthStore()
 
   return (
     <div className="min-h-screen bg-background">
+      <Navigation />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/events" element={<EventsPage />} />
@@ -62,10 +69,42 @@ function App() {
           }
         />
         <Route
+          path="/tickets"
+          element={
+            <ProtectedRoute requiredRoles={['event_creator']}>
+              <TicketSalesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/profile"
           element={
             <ProtectedRoute>
-              <div>Profile Page</div>
+              <MyTicketsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/qr-validation"
+          element={
+            <ProtectedRoute requiredRoles={['event_creator', 'website_owner']}>
+              <AdminQRValidationPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute requiredRoles={['event_creator', 'website_owner']}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events/:id/analytics"
+          element={
+            <ProtectedRoute requiredRoles={['event_creator', 'website_owner']}>
+              <EventAnalyticsPage />
             </ProtectedRoute>
           }
         />

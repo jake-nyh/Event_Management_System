@@ -5,9 +5,10 @@ import { useAuthStore } from '@/store/useAuthStore';
 interface ProtectedRouteProps {
   children: ReactNode;
   requiredRole?: 'event_creator' | 'customer' | 'website_owner';
+  requiredRoles?: Array<'event_creator' | 'customer' | 'website_owner'>;
 }
 
-export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredRole, requiredRoles }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuthStore();
 
   if (!isAuthenticated) {
@@ -15,6 +16,10 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   if (requiredRole && user?.role !== requiredRole) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  if (requiredRoles && !requiredRoles.includes(user?.role as any)) {
     return <Navigate to="/unauthorized" replace />;
   }
 

@@ -216,6 +216,31 @@ router.get('/:id/ticket-types', async (req: Request, res: Response) => {
   }
 });
 
+// Get sold tickets for an event (protected endpoint for event organizers)
+router.get('/:id/sold-tickets', authenticateToken, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+    if (!user) {
+      res.status(401).json({ message: 'Authentication required' });
+      return;
+    }
+    
+    // Check if user is the event creator
+    const event = await eventService.getEventById(id);
+    if (!event || event.creatorId !== user.id) {
+      res.status(403).json({ message: 'Access denied' });
+      return;
+    }
+    
+    const tickets = await eventService.getSoldTicketsForEvent(id);
+    res.json(tickets);
+  } catch (error) {
+    console.error('Error getting sold tickets:', error);
+    res.status(500).json({ message: 'Failed to get sold tickets' });
+  }
+});
+
 // Upload event image (protected endpoint)
 router.post('/:id/upload-image', authenticateToken, upload.single('image'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {

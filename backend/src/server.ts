@@ -18,6 +18,8 @@ import ticketRoutes from './routes/tickets';
 import paymentRoutes from './routes/payments';
 import adminRoutes from './routes/admin';
 import analyticsRoutes from './routes/analytics';
+import customerRoutes from './routes/customers';
+import qrCodeRoutes from './routes/qrCodes';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -64,6 +66,8 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/qr-codes', qrCodeRoutes);
 
 // Error handling middleware
 app.use(notFound);

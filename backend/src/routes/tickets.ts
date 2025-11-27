@@ -10,10 +10,10 @@ router.get('/event/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
     const ticketTypes = await TicketService.getTicketTypesByEvent(eventId);
-    res.json(ticketTypes);
+    return res.json(ticketTypes);
   } catch (error) {
     console.error('Error fetching ticket types:', error);
-    res.status(500).json({ error: 'Failed to fetch ticket types' });
+    return res.status(500).json({ error: 'Failed to fetch ticket types' });
   }
 });
 
@@ -22,10 +22,10 @@ router.get('/event/:eventId/availability', async (req, res) => {
   try {
     const { eventId } = req.params;
     const ticketTypes = await TicketService.getTicketTypesWithAvailability(eventId);
-    res.json(ticketTypes);
+    return res.json(ticketTypes);
   } catch (error) {
     console.error('Error fetching ticket types with availability:', error);
-    res.status(500).json({ error: 'Failed to fetch ticket types with availability' });
+    return res.status(500).json({ error: 'Failed to fetch ticket types with availability' });
   }
 });
 
@@ -36,14 +36,13 @@ router.get('/:id', async (req, res) => {
     const ticketType = await TicketService.getTicketTypeById(id);
     
     if (!ticketType) {
-      res.status(404).json({ error: 'Ticket type not found' });
-      return;
+      return res.status(404).json({ error: 'Ticket type not found' });
     }
     
-    res.json(ticketType);
+    return res.json(ticketType);
   } catch (error) {
     console.error('Error fetching ticket type:', error);
-    res.status(500).json({ error: 'Failed to fetch ticket type' });
+    return res.status(500).json({ error: 'Failed to fetch ticket type' });
   }
 });
 
@@ -59,10 +58,10 @@ router.post(
         ...ticketTypeData,
         eventId
       });
-      res.status(201).json(ticketType);
+      return res.status(201).json(ticketType);
     } catch (error) {
       console.error('Error creating ticket type:', error);
-      res.status(500).json({ error: 'Failed to create ticket type' });
+      return res.status(500).json({ error: 'Failed to create ticket type' });
     }
   }
 );
@@ -78,29 +77,25 @@ router.put(
       
       // Basic validation
       if (name !== undefined && (typeof name !== 'string' || name.length < 1 || name.length > 100)) {
-        res.status(400).json({ error: 'Invalid name' });
-        return;
+        return res.status(400).json({ error: 'Invalid name' });
       }
       if (price !== undefined && (typeof price !== 'number' || price < 0)) {
-        res.status(400).json({ error: 'Invalid price' });
-        return;
+        return res.status(400).json({ error: 'Invalid price' });
       }
       if (quantityAvailable !== undefined && (typeof quantityAvailable !== 'number' || quantityAvailable < 1 || !Number.isInteger(quantityAvailable))) {
-        res.status(400).json({ error: 'Invalid quantity' });
-        return;
+        return res.status(400).json({ error: 'Invalid quantity' });
       }
       
       const ticketType = await TicketService.updateTicketType(id, req.body);
       
       if (!ticketType) {
-        res.status(404).json({ error: 'Ticket type not found' });
-        return;
+        return res.status(404).json({ error: 'Ticket type not found' });
       }
       
-      res.json(ticketType);
+      return res.json(ticketType);
     } catch (error) {
       console.error('Error updating ticket type:', error);
-      res.status(500).json({ error: 'Failed to update ticket type' });
+      return res.status(500).json({ error: 'Failed to update ticket type' });
     }
   }
 );
@@ -112,14 +107,13 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const success = await TicketService.deleteTicketType(id);
     
     if (!success) {
-      res.status(404).json({ error: 'Ticket type not found' });
-      return;
+      return res.status(404).json({ error: 'Ticket type not found' });
     }
     
-    res.status(204).send();
+    return res.status(204).send();
   } catch (error) {
     console.error('Error deleting ticket type:', error);
-    res.status(500).json({ error: 'Failed to delete ticket type' });
+    return res.status(500).json({ error: 'Failed to delete ticket type' });
   }
 });
 
@@ -128,10 +122,10 @@ router.get('/:id/availability', async (req, res) => {
   try {
     const { id } = req.params;
     const isAvailable = await TicketService.checkAvailability(id);
-    res.json({ available: isAvailable });
+    return res.json({ available: isAvailable });
   } catch (error) {
     console.error('Error checking ticket availability:', error);
-    res.status(500).json({ error: 'Failed to check ticket availability' });
+    return res.status(500).json({ error: 'Failed to check ticket availability' });
   }
 });
 
@@ -140,10 +134,10 @@ router.get('/:id/available-count', async (req, res) => {
   try {
     const { id } = req.params;
     const count = await TicketService.getAvailableCount(id);
-    res.json({ availableCount: count });
+    return res.json({ availableCount: count });
   } catch (error) {
     console.error('Error getting available count:', error);
-    res.status(500).json({ error: 'Failed to get available count' });
+    return res.status(500).json({ error: 'Failed to get available count' });
   }
 });
 

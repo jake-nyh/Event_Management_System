@@ -45,12 +45,6 @@ export function LoginForm() {
 
   return (
     <Card className="w-full max-w-md mx-auto shadow-xl border-0">
-      <CardHeader className="space-y-1 pb-6">
-        <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
-        <CardDescription className="text-center">
-          Enter your credentials to access your account
-        </CardDescription>
-      </CardHeader>
       <CardContent className="pb-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">

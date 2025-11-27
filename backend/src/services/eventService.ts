@@ -1,6 +1,6 @@
 import { db } from '../database/connection';
-import { events, ticketTypes as ticketTypesTable, users } from '../database/schema';
-import { eq, and, desc, asc, like, or, gte, lte } from 'drizzle-orm';
+import { events, ticketTypes as ticketTypesTable, users, tickets } from '../database/schema';
+import { eq, and, desc, asc, like, or, gte, lte, count, sql } from 'drizzle-orm';
 import { NewEvent, Event, NewTicketType, TicketType } from '../database/schema';
 
 export interface CreateEventData extends Omit<NewEvent, 'creatorId'> {
@@ -125,12 +125,12 @@ export class EventService {
     }
     
     // Get total count
-    const [{ count }] = await db
-      .select({ count: events.id })
+    const countResult = await db
+      .select({ count: count() })
       .from(events)
       .where(whereClause);
-    
-    const total = Number(count);
+
+    const total = Number(countResult[0]?.count || 0);
     
     // Get events with pagination
     const offset = (page - 1) * limit;
@@ -240,6 +240,46 @@ export class EventService {
       .select()
       .from(ticketTypesTable)
       .where(eq(ticketTypesTable.eventId, eventId));
+  }
+
+  // Get sold tickets for an event
+  async getSoldTicketsForEvent(eventId: string): Promise<any[]> {
+    return await db
+      .select({
+        // Ticket fields
+        id: tickets.id,
+        qrCode: tickets.qrCode,
+        status: tickets.status,
+        purchasedAt: tickets.purchasedAt,
+        updatedAt: tickets.updatedAt,
+        // Ticket type fields
+        ticketType: {
+          id: ticketTypesTable.id,
+          name: ticketTypesTable.name,
+          price: ticketTypesTable.price,
+        },
+        // Customer fields
+        customer: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+        },
+        // Event fields
+        event: {
+          id: events.id,
+          title: events.title,
+          eventDate: events.eventDate,
+          eventTime: events.eventTime,
+          location: events.location,
+        },
+      })
+      .from(tickets)
+      .leftJoin(ticketTypesTable, eq(tickets.ticketTypeId, ticketTypesTable.id))
+      .leftJoin(users, eq(tickets.customerId, users.id))
+      .leftJoin(events, eq(ticketTypesTable.eventId, events.id))
+      .where(eq(events.id, eventId))
+      .orderBy(desc(tickets.purchasedAt));
   }
 
   // Update event status
