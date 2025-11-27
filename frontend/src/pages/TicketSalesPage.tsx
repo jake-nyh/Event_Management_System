@@ -1,29 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { 
-  Search, 
-  Download, 
-  Filter, 
-  Calendar, 
-  Users, 
-  DollarSign, 
-  Ticket, 
+import {
+  Search,
+  Download,
+  Filter,
+  DollarSign,
+  Ticket,
   CheckCircle,
   XCircle,
   Clock,
   ArrowRight
 } from 'lucide-react';
-import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/hooks/use-toast';
 import { eventService, Event } from '@/services/eventService';
 import { customerService, CustomerTicket } from '@/services/customerService';
 
 export function TicketSalesPage() {
-  const { user } = useAuthStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [events, setEvents] = useState<Event[]>([]);

@@ -11,13 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { eventService, CreateEventData, CreateTicketType } from '@/services/eventService';
-import { 
-  ArrowRight, 
-  ArrowLeft, 
-  Calendar, 
-  MapPin, 
-  Clock, 
-  Image, 
+import {
+  ArrowRight,
+  ArrowLeft,
+  Calendar,
+  MapPin,
+  Image,
   DollarSign,
   Plus,
   Trash2,
@@ -39,17 +38,8 @@ const detailsSchema = z.object({
   isVirtual: z.boolean().default(false),
 });
 
-const ticketsSchema = z.object({
-  ticketTypes: z.array(z.object({
-    name: z.string().min(1, 'Ticket name is required'),
-    price: z.string().min(1, 'Price is required'),
-    quantityAvailable: z.number().min(1, 'Quantity must be at least 1'),
-  })).min(1, 'At least one ticket type is required'),
-});
-
 type BasicInfoData = z.infer<typeof basicInfoSchema>;
 type DetailsData = z.infer<typeof detailsSchema>;
-type TicketsData = z.infer<typeof ticketsSchema>;
 
 interface Step {
   id: number;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { TicketTypeList } from '../components/tickets/TicketTypeList';
 import { TicketTypeForm } from '../components/tickets/TicketTypeForm';
@@ -7,7 +7,7 @@ import { useToast } from '../components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function TicketManagementPage() {
@@ -41,16 +41,6 @@ export function TicketManagementPage() {
   useEffect(() => {
     fetchTicketTypes();
   }, [eventId]);
-
-  const handleCreateTicketType = () => {
-    setEditingTicketType(null);
-    setShowForm(true);
-  };
-
-  const handleEditTicketType = (ticketType: TicketType) => {
-    setEditingTicketType(ticketType);
-    setShowForm(true);
-  };
 
   const handleFormSubmit = async (data: CreateTicketTypeData | UpdateTicketTypeData) => {
     if (!eventId) return;
@@ -92,24 +82,6 @@ export function TicketManagementPage() {
   const handleFormCancel = () => {
     setShowForm(false);
     setEditingTicketType(null);
-  };
-
-  const handleDeleteTicketType = async (ticketTypeId: string) => {
-    try {
-      await ticketService.deleteTicketType(ticketTypeId);
-      toast({
-        title: 'Success',
-        description: 'Ticket type deleted successfully',
-      });
-      await fetchTicketTypes();
-    } catch (error) {
-      console.error('Error deleting ticket type:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete ticket type',
-        variant: 'destructive',
-      });
-    }
   };
 
   if (!eventId) {

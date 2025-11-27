@@ -1,4 +1,3 @@
-import React from 'react';
 import { EventDashboard } from '@/components/events/EventDashboard';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 

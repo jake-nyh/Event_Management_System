@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -16,9 +15,7 @@ export default function AdminQRValidationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [ticketId, setTicketId] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState('');
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleValidateQR = async () => {
@@ -92,7 +89,6 @@ export default function AdminQRValidationPage() {
   const simulateQRScan = () => {
     // Simulate QR scan with sample data for demo purposes
     const sampleQRData = `ticket_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    setScanResult(sampleQRData);
     setQrData(sampleQRData);
     toast({
       title: "Success",
@@ -107,7 +103,6 @@ export default function AdminQRValidationPage() {
     if (detectedCodes && detectedCodes.length > 0) {
       const result = detectedCodes[0].rawValue;
       setQrData(result);
-      setScanResult(result);
       toast({
         title: "Success",
         description: 'QR code scanned successfully',

@@ -1,16 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Event, EventsResponse, eventService } from '../../services/eventService';
+import { Event, eventService } from '../../services/eventService';
 import {
   Calendar,
   MapPin,
   Clock,
-  Users,
   Star,
   Search,
   Filter,
@@ -19,7 +18,6 @@ import {
   ChevronDown,
   ArrowRight
 } from 'lucide-react';
-import { banners } from '../../lib/designSystem';
 
 interface ImprovedEventListProps {
   initialEvents?: Event[];
@@ -139,7 +137,7 @@ export function EventList({ initialEvents = [], showFilters = true }: ImprovedEv
     // Price filter (would need ticket data for actual implementation)
     if (priceRange !== 'all') {
       // This is a placeholder - would need actual ticket price data
-      filtered = filtered.filter(event => {
+      filtered = filtered.filter(() => {
         // For demo, we'll just return all events
         return true;
       });

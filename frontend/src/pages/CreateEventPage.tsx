@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { EventWizard } from '@/components/events/EventWizard';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, Plus, Calendar, Shield } from 'lucide-react';
+import { Plus, Shield } from 'lucide-react';
 import { banners } from '@/lib/designSystem';
 
 export function CreateEventPage() {

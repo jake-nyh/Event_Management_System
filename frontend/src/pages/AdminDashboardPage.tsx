@@ -6,21 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { adminService, CommissionSettings, SubscriptionTier, User, DashboardAnalytics } from '@/services/adminService';
+import { adminService, CommissionSettings, SubscriptionTier, User } from '@/services/adminService';
 import { analyticsService } from '@/services/analyticsService';
 import {
   Users,
   Calendar,
   DollarSign,
   TrendingUp,
-  Settings,
   Crown,
   Search,
   Edit,
   Trash2,
   Plus
 } from 'lucide-react';
-import { SimpleLineChart, SimpleBarChart, MetricCard } from '@/components/ui/chart';
+import { SimpleLineChart, MetricCard } from '@/components/ui/chart';
 
 const AdminDashboardPage = () => {
   const { toast } = useToast();
@@ -30,8 +29,6 @@ const AdminDashboardPage = () => {
   const [subscriptionTiers, setSubscriptionTiers] = useState<SubscriptionTier[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
 
   // Load dashboard data
@@ -53,7 +50,6 @@ const AdminDashboardPage = () => {
       setCommissionSettings(commissionData);
       setSubscriptionTiers(tiersData);
       setUsers(usersData.users);
-      setTotalPages(usersData.totalPages);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -88,8 +84,6 @@ const AdminDashboardPage = () => {
     try {
       const usersData = await adminService.getUsers(1, 20, searchTerm);
       setUsers(usersData.users);
-      setTotalPages(usersData.totalPages);
-      setCurrentPage(1);
     } catch (error) {
       console.error('Error searching users:', error);
       toast({
@@ -213,7 +207,7 @@ const AdminDashboardPage = () => {
             <CardContent>
               <div className="space-y-4">
                 {analytics?.recentTransactions?.length > 0 ? (
-                  analytics.recentTransactions.map((transaction: any, index: number) => (
+                  analytics.recentTransactions.map((transaction: any) => (
                     <div key={transaction.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">{transaction.eventTitle}</p>

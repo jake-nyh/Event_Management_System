@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { eventService, CreateEventData, TicketType, CreateTicketType } from '@/services/eventService';
+import { eventService, CreateEventData, CreateTicketType } from '@/services/eventService';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 
 const eventSchema = z.object({

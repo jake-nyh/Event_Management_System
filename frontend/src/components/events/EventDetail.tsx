@@ -1,10 +1,9 @@
-import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { eventService, Event, TicketType } from '@/services/eventService';
+import { eventService } from '@/services/eventService';
 import { Calendar, MapPin, Clock, ArrowLeft, Edit, Trash2, User, Star, Tag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -14,7 +13,6 @@ export function EventDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthStore();
-  const queryClient = useQueryClient();
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ['event', id],

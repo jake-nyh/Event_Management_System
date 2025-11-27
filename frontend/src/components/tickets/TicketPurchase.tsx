@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { eventService, Event, TicketType } from '@/services/eventService';
+import { eventService, TicketType } from '@/services/eventService';
 import { paymentService, TicketItem } from '@/services/paymentService';
 import { 
   Calendar, 
@@ -50,7 +50,6 @@ export function TicketPurchase() {
   const [selectedTickets, setSelectedTickets] = useState<SelectedTicket[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseStep, setPurchaseStep] = useState<'select' | 'checkout' | 'success'>('select');
-  const [purchasedTickets, setPurchasedTickets] = useState<any[]>([]);
 
   useEffect(() => {
     if (ticketTypes) {
@@ -119,9 +118,8 @@ export function TicketPurchase() {
         tickets: selectedTicketItems,
       };
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       setPurchaseStep('success');
-      setPurchasedTickets(data.tickets || []);
       toast({
         title: 'Purchase Successful!',
         description: 'Your tickets have been purchased successfully.',

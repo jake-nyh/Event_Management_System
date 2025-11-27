@@ -168,8 +168,6 @@ function toast({ ...props }: Toast) {
     id: id,
     dismiss,
     update,
-    error: (message: string) => toast.error(message),
-    success: (message: string) => toast.success(message),
   }
 }
 

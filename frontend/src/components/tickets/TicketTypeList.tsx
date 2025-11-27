@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -32,7 +32,7 @@ export function TicketTypeList({
     setShowForm(true);
   };
 
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = async () => {
     // This will be implemented in the parent component
     // For now, we'll just close the form
     setShowForm(false);

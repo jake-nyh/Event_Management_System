@@ -11,8 +11,6 @@ import {
   DollarSign,
   Plus,
   Eye,
-  Clock,
-  MapPin,
   Star,
   ArrowRight,
   Activity,
@@ -155,21 +153,6 @@ export function Dashboard() {
     return 'Good evening';
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatTime = (timeString: string) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex flex-col items-center justify-center">
@@ -242,7 +225,7 @@ export function Dashboard() {
             <h2 className="text-2xl font-bold text-gray-900">Quick Actions</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {quickActions.map((action, index) => {
+            {quickActions.map((action) => {
               const Icon = action.icon;
               return (
                 <Card
@@ -497,7 +480,7 @@ export function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {user?.role === 'event_creator' && myEvents.slice(0, 5).map((event, index) => (
+                  {user?.role === 'event_creator' && myEvents.slice(0, 5).map((event) => (
                     <div key={event.id} className="flex items-center space-x-4 pb-4 border-b last:border-b-0">
                       <div className={`w-2 h-2 rounded-full mt-2 ${
                         event.status === 'published' ? 'bg-green-500' :
@@ -516,8 +499,8 @@ export function Dashboard() {
                       </div>
                     </div>
                   ))}
-                  
-                  {user?.role === 'customer' && myTickets.slice(0, 5).map((ticket, index) => (
+
+                  {user?.role === 'customer' && myTickets.slice(0, 5).map((ticket) => (
                     <div key={ticket.id} className="flex items-center space-x-4 pb-4 border-b last:border-b-0">
                       <div className={`w-2 h-2 rounded-full mt-2 ${
                         ticket.status === 'active' ? 'bg-green-500' :

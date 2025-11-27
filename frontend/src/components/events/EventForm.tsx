@@ -48,7 +48,6 @@ export function EventForm({ onSuccess, initialData }: EventFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [createdEventId, setCreatedEventId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<EventFormData>({
@@ -172,8 +171,7 @@ export function EventForm({ onSuccess, initialData }: EventFormProps) {
       };
 
       const newEvent = await eventService.createEvent(eventData);
-      setCreatedEventId(newEvent.id);
-      
+
       // Upload image if provided
       if (imageFile && newEvent.id) {
         const uploadResult = await eventService.uploadEventImage(newEvent.id, imageFile);

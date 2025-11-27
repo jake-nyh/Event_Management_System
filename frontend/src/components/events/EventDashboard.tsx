@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { eventService, Event, EventFilters, TicketType } from '@/services/eventService';
+import { eventService, Event, EventFilters } from '@/services/eventService';
 import {
   Calendar,
   Clock,
@@ -13,9 +13,7 @@ import {
   Trash2,
   Eye,
   TrendingUp,
-  Users,
-  DollarSign,
-  BarChart3
+  DollarSign
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 // Color Palette
@@ -341,7 +340,7 @@ interface ProgressStepsProps {
   currentStep: number;
 }
 
-export function ProgressSteps({ steps, currentStep }: ProgressStepsProps) {
+export function ProgressSteps({ steps }: ProgressStepsProps) {
   return (
     <div className="flex items-center justify-between mb-8">
       {steps.map((step, index) => (

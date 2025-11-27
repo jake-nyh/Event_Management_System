@@ -75,10 +75,10 @@ export const SimpleBarChart: React.FC<BarChartProps> = ({
             tick={{ fontSize: 12 }}
           />
           <Tooltip />
-          <Bar 
-            dataKey={yKey} 
+          <Bar
+            dataKey={yKey}
             fill={color}
-            radius={[4, 0]}
+            radius={[4, 4, 0, 0]}
           />
         </BarChart>
       </ResponsiveContainer>
@@ -95,10 +95,9 @@ interface PieChartProps {
   colors?: string[];
 }
 
-export const SimplePieChart: React.FC<PieChartProps> = ({ 
-  data, 
-  nameKey, 
-  valueKey, 
+export const SimplePieChart: React.FC<PieChartProps> = ({
+  data,
+  valueKey,
   title,
   colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#f97316']
 }) => {
@@ -117,7 +116,7 @@ export const SimplePieChart: React.FC<PieChartProps> = ({
             fill="#8884d8"
             dataKey={valueKey}
           >
-            {data.map((entry, index) => (
+            {data.map((_, index) => (
               <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
             ))}
           </Pie>

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { customerService, CustomerTicket, CustomerTicketStats } from '@/services/customerService';
-import { Calendar, Clock, MapPin, Ticket, QrCode, Download, ExternalLink, RefreshCw, Sparkles } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { customerService, CustomerTicket } from '@/services/customerService';
+import { Calendar, Clock, MapPin, Ticket, QrCode, ExternalLink, RefreshCw, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/useAuthStore';
 import { banners } from '@/lib/designSystem';
@@ -22,13 +22,13 @@ export function MyTicketsPage() {
     enabled: !!user,
   });
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats } = useQuery({
     queryKey: ['myTicketStats'],
     queryFn: () => customerService.getMyTicketStats(),
     enabled: !!user,
   });
 
-  const updateTicketStatusMutation = useMutation({
+  useMutation({
     mutationFn: ({ ticketId, status }: { ticketId: string; status: 'active' | 'used' | 'transferred' | 'refunded' }) =>
       customerService.updateTicketStatus(ticketId, status),
     onSuccess: () => {

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { SimpleLineChart, SimpleBarChart, MetricCard } from '@/components/ui/chart';
 import { analyticsService, EventAnalytics } from '@/services/analyticsService';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, DollarSign, Users, TrendingUp } from 'lucide-react';
+import { DollarSign, Users, TrendingUp } from 'lucide-react';
 
 const EventAnalyticsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,14 +33,6 @@ const EventAnalyticsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
   };
 
   if (loading) {

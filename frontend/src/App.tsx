@@ -1,5 +1,4 @@
 import { Routes, Route } from 'react-router-dom'
-import { useAuthStore } from './store/useAuthStore'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { DashboardPage } from './pages/DashboardPage'
@@ -19,8 +18,6 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { Navigation } from './components/layout/Navigation'
 
 function App() {
-  const { isAuthenticated } = useAuthStore()
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />

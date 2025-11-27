@@ -1,10 +1,9 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { EventList } from '@/components/events/EventList';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
-import { Calendar, Plus, Sparkles, TrendingUp } from 'lucide-react';
-import { banners, hero } from '@/lib/designSystem';
+import { Plus, Sparkles } from 'lucide-react';
+import { banners } from '@/lib/designSystem';
 
 export function EventsPage() {
   const { user } = useAuthStore();

@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { CreateTicketTypeData, UpdateTicketTypeData, TicketType } from '../../services/ticketService';

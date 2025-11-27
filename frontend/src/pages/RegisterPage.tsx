@@ -1,5 +1,5 @@
 import { RegisterForm } from '@/components/auth/RegisterForm';
-import { UserPlus, Check, Sparkles, Shield, Star, Users, Gift } from 'lucide-react';
+import { UserPlus, Shield, Star, Users, Gift } from 'lucide-react';
 import { banners } from '@/lib/designSystem';
 
 export function RegisterPage() {

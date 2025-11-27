@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { eventService, Event, EventsResponse, EventFilters } from '../services/eventService';
+import { eventService, Event, EventFilters } from '../services/eventService';
 import { useAuthStore } from '../store/useAuthStore';
 import { Search, Calendar, MapPin, Clock, Star, Users, TrendingUp, Sparkles, Shield, Zap, ArrowRight, ChevronRight, Check } from 'lucide-react';
 
 export function HomePage() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [eventsData, setEventsData] = useState<EventsResponse>({ events: [], total: 0 });
   const [filters, setFilters] = useState<EventFilters>({
     search: '',
     location: '',
@@ -22,8 +21,6 @@ export function HomePage() {
     sortOrder: 'desc',
   });
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('date');
   const { user } = useAuthStore();
 
   useEffect(() => {
@@ -34,7 +31,6 @@ export function HomePage() {
     try {
       setLoading(true);
       const data = await eventService.getEvents(filters);
-      setEventsData(data);
       setEvents(data.events);
     } catch (error) {
       console.error('Error fetching events:', error);
@@ -51,12 +47,12 @@ export function HomePage() {
     )
     .sort((a, b) => {
       switch (filters.sortBy) {
+        case 'createdAt':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case 'date':
           return new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime();
-        case 'name':
+        case 'title':
           return a.title.localeCompare(b.title);
-        case 'location':
-          return a.location.localeCompare(b.location);
         default:
           return 0;
       }
@@ -382,7 +378,7 @@ export function HomePage() {
                 </div>
                 <h3 className="text-2xl font-bold mb-3 text-gray-900">No events found</h3>
                 <p className="text-gray-600 mb-6 text-lg">
-                  {searchTerm ? 'Try adjusting your search terms' : 'Check back later for upcoming events'}
+                  {filters.search ? 'Try adjusting your search terms' : 'Check back later for upcoming events'}
                 </p>
                 {user?.role === 'event_creator' && (
                   <Link to="/create-event">

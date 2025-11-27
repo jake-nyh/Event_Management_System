@@ -1,5 +1,5 @@
 import { LoginForm } from '@/components/auth/LoginForm';
-import { Calendar, Check, Sparkles, Shield, Zap, TrendingUp } from 'lucide-react';
+import { Calendar, Sparkles, Shield, Zap, TrendingUp } from 'lucide-react';
 import { banners } from '@/lib/designSystem';
 
 export function LoginPage() {
