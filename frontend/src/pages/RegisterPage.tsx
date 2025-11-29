@@ -127,20 +127,6 @@ export function RegisterPage() {
           </div>
 
           {/* Footer */}
-          <div className="text-center mt-8">
-            <p className="text-sm text-gray-600 mb-4">
-              Already have an account?{' '}
-              <a href="/login" className="text-purple-600 hover:text-purple-700 font-semibold hover:underline">
-                Sign in
-              </a>
-            </p>
-            <p className="text-xs text-gray-500">
-              By creating an account, you agree to our{' '}
-              <a href="#" className="text-purple-600 hover:underline">Terms</a>
-              {' '}and{' '}
-              <a href="#" className="text-purple-600 hover:underline">Privacy Policy</a>
-            </p>
-          </div>
         </div>
       </div>
     </div>

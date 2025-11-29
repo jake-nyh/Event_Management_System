@@ -8,14 +8,15 @@ const router: Router = Router();
 router.post('/generate/:ticketId', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { ticketId } = req.params;
-    
+
     const result = await qrCodeService.generateQRCode(ticketId);
-    
+
     if (result.success) {
       return res.json({
         success: true,
         data: {
           qrCode: result.qrCode,
+          qrCodeImage: result.qrCodeImage,
           ticketId,
         },
       });
@@ -30,6 +31,36 @@ router.post('/generate/:ticketId', authenticateToken, async (req: AuthRequest, r
     return res.status(500).json({
       success: false,
       message: error.message || 'Failed to generate QR code',
+    });
+  }
+});
+
+// Get QR code image for a ticket
+router.get('/image/:ticketId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ticketId } = req.params;
+
+    const result = await qrCodeService.getTicketQRCodeImage(ticketId);
+
+    if (result.success && result.qrCodeImage) {
+      return res.json({
+        success: true,
+        data: {
+          qrCodeImage: result.qrCodeImage,
+          ticketId,
+        },
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to get QR code image',
+      });
+    }
+  } catch (error: any) {
+    console.error('Error getting QR code image:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get QR code image',
     });
   }
 });

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { eventService, Event, EventFilters } from '@/services/eventService';
+import { getImageUrl } from '@/services/api';
 import {
   Calendar,
   Clock,
@@ -234,9 +235,9 @@ export function EventDashboard() {
               <Card key={event.id} className="hover:shadow-lg transition-shadow">
                 {event.imageUrl && (
                   <div className="w-full h-48 overflow-hidden rounded-t-lg">
-                    <img 
-                      src={event.imageUrl} 
-                      alt={event.title} 
+                    <img
+                      src={getImageUrl(event.imageUrl) || ''}
+                      alt={event.title}
                       className="w-full h-full object-cover"
                     />
                   </div>

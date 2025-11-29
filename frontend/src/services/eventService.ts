@@ -74,17 +74,18 @@ export interface EventsResponse {
 export const eventService = {
   // Get all events
   async getEvents(filters?: EventFilters): Promise<EventsResponse> {
-    const params = new URLSearchParams();
-    
+    // Build params object, filtering out undefined/null values
+    const params: Record<string, string | number | boolean> = {};
+
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          params.append(key, value.toString());
+        if (value !== undefined && value !== null && value !== '') {
+          params[key] = value;
         }
       });
     }
-    
-    const response = await api.get(`/events?${params.toString()}`);
+
+    const response = await api.get('/events', { params });
     return response.data;
   },
 

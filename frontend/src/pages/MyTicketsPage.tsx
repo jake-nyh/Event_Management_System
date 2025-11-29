@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { customerService, CustomerTicket } from '@/services/customerService';
+import { getImageUrl } from '@/services/api';
 import { Calendar, Clock, MapPin, Ticket, QrCode, ExternalLink, RefreshCw, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -103,24 +104,54 @@ export function MyTicketsPage() {
     }
   };
 
-  const handleDownloadQR = (ticket: CustomerTicket) => {
-    if (!ticket.qrCode) return;
-    
-    // For demo purposes, we'll create a simple QR code URL
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${ticket.qrCode}`;
-    
-    // Create a temporary link to download
-    const link = document.createElement('a');
-    link.href = qrUrl;
-    link.download = `ticket-${ticket.id}-qr.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: 'QR Code Downloaded',
-      description: 'Your ticket QR code has been downloaded',
-    });
+  const handleDownloadQR = async (ticket: CustomerTicket) => {
+    try {
+      let qrCodeImage: string | undefined;
+
+      // If ticket doesn't have QR code, regenerate it first
+      if (!ticket.qrCode) {
+        toast({
+          title: 'Generating QR Code',
+          description: 'Please wait while we generate your QR code...',
+        });
+        const regenerateResult = await customerService.regenerateQRCode(ticket.id);
+        qrCodeImage = regenerateResult.qrCodeImage;
+        // Refresh tickets to update the qrCode field
+        queryClient.invalidateQueries({ queryKey: ['myTickets'] });
+      } else {
+        // Get QR code image from backend API
+        const result = await customerService.getQRCodeImage(ticket.id);
+        qrCodeImage = result.qrCodeImage;
+      }
+
+      if (qrCodeImage) {
+        // Create a temporary link to download
+        const link = document.createElement('a');
+        link.href = qrCodeImage;
+        link.download = `ticket-${ticket.id}-qr.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast({
+          title: 'QR Code Downloaded',
+          description: 'Your ticket QR code has been downloaded',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'QR code not available',
+          variant: 'destructive',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error downloading QR code:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to download QR code',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleMarkAsUsed = (ticketId: string) => {
@@ -308,7 +339,7 @@ export function MyTicketsPage() {
               <CardContent className="space-y-4">
                 {ticket.ticketType?.event?.imageUrl && (
                   <img
-                    src={ticket.ticketType.event.imageUrl}
+                    src={getImageUrl(ticket.ticketType.event.imageUrl) || ''}
                     alt={ticket.ticketType.event.title}
                     className="w-full h-32 object-cover rounded-lg"
                   />
@@ -335,17 +366,16 @@ export function MyTicketsPage() {
                   </div>
                   
                   <div className="flex gap-2">
-                    {ticket.qrCode && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDownloadQR(ticket)}
-                      >
-                        <QrCode className="w-4 h-4 mr-1" />
-                        QR
-                      </Button>
-                    )}
-                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownloadQR(ticket)}
+                      title={ticket.qrCode ? 'Download QR Code' : 'Generate & Download QR Code'}
+                    >
+                      <QrCode className="w-4 h-4 mr-1" />
+                      {ticket.qrCode ? 'QR' : 'Get QR'}
+                    </Button>
+
                     {ticket.status === 'active' && (
                       <Button
                         size="sm"

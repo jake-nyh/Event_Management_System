@@ -58,13 +58,13 @@ class AnalyticsService {
     if (endDate) params.append('endDate', endDate);
 
     const response = await api.get(`/analytics/dashboard?${params.toString()}`);
-    return response.data;
+    return response.data.data || response.data;
   }
 
   // Get event analytics
   async getEventAnalytics(eventId: string): Promise<EventAnalytics> {
     const response = await api.get(`/analytics/events/${eventId}`);
-    return response.data;
+    return response.data.data || response.data;
   }
 
   // Get sales analytics
@@ -74,7 +74,7 @@ class AnalyticsService {
     if (endDate) params.append('endDate', endDate);
 
     const response = await api.get(`/analytics/sales?${params.toString()}`);
-    return response.data;
+    return response.data.data || response.data;
   }
 
   // Get commission analytics
@@ -84,13 +84,13 @@ class AnalyticsService {
     if (endDate) params.append('endDate', endDate);
 
     const response = await api.get(`/analytics/commissions?${params.toString()}`);
-    return response.data;
+    return response.data.data || response.data;
   }
 
   // Get creator analytics
   async getCreatorAnalytics(): Promise<CreatorAnalytics> {
     const response = await api.get('/analytics/creator');
-    return response.data;
+    return response.data.data || response.data;
   }
 }
 

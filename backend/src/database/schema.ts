@@ -62,7 +62,7 @@ export const tickets = pgTable('tickets', {
   ticketTypeId: uuid('ticket_type_id').notNull().references(() => ticketTypes.id, { onDelete: 'cascade' }),
   customerId: uuid('customer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   transactionId: uuid('transaction_id').references(() => transactions.id),
-  qrCode: varchar('qr_code', { length: 255 }).unique(),
+  qrCode: text('qr_code'),
   status: varchar('status', { length: 20 }).default('active').$type<'active' | 'used' | 'transferred' | 'refunded'>(),
   purchasedAt: timestamp('purchased_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),

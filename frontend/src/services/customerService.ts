@@ -86,4 +86,22 @@ export const customerService = {
     const response = await api.get(`/events/${eventId}/sold-tickets`);
     return response.data;
   },
+
+  // Get QR code image for a ticket
+  async getQRCodeImage(ticketId: string): Promise<{ qrCodeImage: string }> {
+    const response = await api.get(`/qr-codes/image/${ticketId}`);
+    return response.data.data;
+  },
+
+  // Regenerate QR code for a specific ticket
+  async regenerateQRCode(ticketId: string): Promise<{ qrCode: string; qrCodeImage: string }> {
+    const response = await api.post(`/customers/tickets/${ticketId}/regenerate-qr`);
+    return response.data.data;
+  },
+
+  // Regenerate QR codes for all tickets without QR codes
+  async regenerateAllQRCodes(): Promise<{ regenerated: number; total: number }> {
+    const response = await api.post('/customers/tickets/regenerate-all-qr');
+    return response.data.data;
+  },
 };

@@ -104,9 +104,22 @@ export class EventService {
     if (location) {
       conditions.push(like(events.location, `%${location}%`));
     }
-    
-    // TODO: Add category, tags, and isFeatured filters after TypeScript issues are resolved
-    
+
+    // Category filter
+    if (filters.category && filters.category !== 'all') {
+      conditions.push(eq(events.category, filters.category));
+    }
+
+    // Tags filter (search within tags)
+    if (filters.tags) {
+      conditions.push(like(events.tags, `%${filters.tags}%`));
+    }
+
+    // Featured filter
+    if (filters.isFeatured !== undefined) {
+      conditions.push(eq(events.isFeatured, filters.isFeatured));
+    }
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
     // Build the order by clause
@@ -295,31 +308,50 @@ export class EventService {
     
     return updatedEvent || null;
   }
+
+  // Get event creator details
+  async getEventCreator(userId: string): Promise<{ firstName: string; lastName: string; email: string } | null> {
+    const [user] = await db
+      .select({
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      })
+      .from(users)
+      .where(eq(users.id, userId));
+
+    return user || null;
+  }
 }
 
 export const eventService = new EventService();
 
 // Upload event image
 export const uploadEventImage = async (file: Express.Multer.File, eventId: string, userId: string): Promise<{ success: boolean; filename?: string; url?: string; error?: string }> => {
-  const { uploadService } = await import('./uploadService');
-  
   try {
-    // Create a File object from the Express.Multer.File buffer
-    const fileBlob = new Blob([file.buffer], { type: file.mimetype });
-    const fileObject = new File([fileBlob], file.originalname, { type: file.mimetype });
-    
-    const uploadResult = await uploadService.uploadEventImage(fileObject, eventId);
-    
-    if (!uploadResult.success || !uploadResult.url) {
-      return uploadResult;
-    }
-    
+    // Multer with diskStorage already saved the file
+    // file.filename contains the saved filename
+    // file.path contains the full path
+    const imageUrl = `/uploads/${file.filename}`;
+
     // Update the event with the image URL
-    await db.update(events)
-      .set({ imageUrl: uploadResult.url })
-      .where(and(eq(events.id, eventId), eq(events.creatorId, userId)));
-    
-    return uploadResult;
+    const result = await db.update(events)
+      .set({ imageUrl })
+      .where(and(eq(events.id, eventId), eq(events.creatorId, userId)))
+      .returning();
+
+    if (result.length === 0) {
+      return {
+        success: false,
+        error: 'Event not found or access denied',
+      };
+    }
+
+    return {
+      success: true,
+      filename: file.filename,
+      url: imageUrl,
+    };
   } catch (error) {
     console.error('Error uploading event image:', error);
     return {

@@ -60,6 +60,7 @@ export function LoginForm() {
                       <Input
                         placeholder="your@email.com"
                         className="pl-10 h-12 border-gray-300 focus:border-primary focus:ring-primary"
+                        autoComplete="email"
                         {...field}
                       />
                     </div>
@@ -81,6 +82,7 @@ export function LoginForm() {
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         className="pl-10 pr-10 h-12 border-gray-300 focus:border-primary focus:ring-primary"
+                        autoComplete="current-password"
                         {...field}
                       />
                       <button
@@ -101,17 +103,17 @@ export function LoginForm() {
                 <input
                   id="remember"
                   type="checkbox"
-                  className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-primary"
                 />
                 <label htmlFor="remember" className="text-sm text-gray-600">
                   Remember me
                 </label>
               </div>
-              <Button variant="link" className="p-0 h-auto font-normal text-primary">
+              <Button variant="link" className="p-0 h-auto font-normal text-indigo-600">
                 Forgot password?
               </Button>
             </div>
-            <Button type="submit" className="w-full h-12 bg-primary hover:bg-primary/90" disabled={isLoading}>
+            <Button type="submit" className="w-full h-12 text-white bg-indigo-600 hover:bg-indigo-600/90" disabled={isLoading}>
               {isLoading ? (
                 <span className="flex items-center justify-center">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -128,7 +130,7 @@ export function LoginForm() {
         </Form>
         <div className="mt-6 text-center text-sm">
           Don't have an account?{' '}
-          <Button variant="link" className="p-0 h-auto font-normal text-primary" onClick={() => navigate('/register')}>
+          <Button variant="link" className="p-0 h-auto font-normal text-indigo-600" onClick={() => navigate('/register')}>
             Sign up
           </Button>
         </div>

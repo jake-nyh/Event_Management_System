@@ -18,8 +18,10 @@ export default function AdminQRValidationPage() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const { toast } = useToast();
 
-  const handleValidateQR = async () => {
-    if (!qrData.trim()) {
+  const handleValidateQR = async (dataToValidate?: string) => {
+    const data = dataToValidate || qrData;
+
+    if (!data.trim()) {
       toast({
         title: "Error",
         description: 'Please enter QR code data',
@@ -32,8 +34,8 @@ export default function AdminQRValidationPage() {
     setValidationResult(null);
 
     try {
-      const response = await api.post('/qr-codes/admin/validate', { qrData });
-      
+      const response = await api.post('/qr-codes/admin/validate', { qrData: data });
+
       if (response.data.success) {
         setValidationResult(response.data.data);
         setTicketId(response.data.data.ticket?.id || '');
@@ -52,7 +54,7 @@ export default function AdminQRValidationPage() {
       console.error('Error validating QR code:', error);
       toast({
         title: "Error",
-        description: error.message || 'Failed to validate QR code',
+        description: error.response?.data?.message || error.message || 'Failed to validate QR code',
         variant: "destructive",
       });
     } finally {
@@ -87,16 +89,22 @@ export default function AdminQRValidationPage() {
   };
 
   const simulateQRScan = () => {
-    // Simulate QR scan with sample data for demo purposes
-    const sampleQRData = `ticket_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    // Simulate QR scan with sample data in valid JSON format
+    // Note: This will fail validation since it uses a fake UUID, but demonstrates the correct format
+    const sampleTicketId = 'demo-' + Math.random().toString(36).substring(2, 10);
+    const sampleQRData = JSON.stringify({
+      t: sampleTicketId,
+      tt: 'demo-ticket-type',
+      s: 'active'
+    });
     setQrData(sampleQRData);
     toast({
-      title: "Success",
-      description: 'QR code scanned successfully',
+      title: "Demo QR Scanned",
+      description: 'Sample QR code generated (will fail validation - use real ticket QR)',
     });
     stopCamera();
-    // Automatically validate after successful scan
-    handleValidateQR();
+    // Pass the data directly to avoid race condition with setState
+    handleValidateQR(sampleQRData);
   };
 
   const handleScanResult = (detectedCodes: any[]) => {
@@ -108,8 +116,8 @@ export default function AdminQRValidationPage() {
         description: 'QR code scanned successfully',
       });
       stopCamera();
-      // Automatically validate after successful scan
-      handleValidateQR();
+      // Pass the data directly to avoid race condition with setState
+      handleValidateQR(result);
     }
   };
 
@@ -317,7 +325,7 @@ export default function AdminQRValidationPage() {
                     className="w-full border-2 border-gray-200 focus:border-indigo-400 transition-colors"
                   />
                   <Button
-                    onClick={handleValidateQR}
+                    onClick={() => handleValidateQR()}
                     disabled={isLoading || !qrData.trim()}
                     className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >

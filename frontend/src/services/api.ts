@@ -1,6 +1,18 @@
 import axios from 'axios';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
+const BASE_URL = (import.meta as any).env?.VITE_BASE_URL || 'http://localhost:3001';
+
+// Helper function to get full image URL
+export const getImageUrl = (imageUrl: string | null | undefined): string | null => {
+  if (!imageUrl) return null;
+  // If already a full URL, return as is
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  // Prepend base URL for relative paths
+  return `${BASE_URL}${imageUrl}`;
+};
 
 // Create axios instance
 const api = axios.create({

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { eventService, CreateEventData, UpdateEventData, EventFilters, uploadEventImage } from '../services/eventService';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { upload } from '../middleware/upload';
+import { emailService } from '../services/emailService';
 
 const router: Router = Router();
 
@@ -14,6 +15,9 @@ router.get('/', async (req: Request, res: Response) => {
       startDate: req.query.startDate as string,
       endDate: req.query.endDate as string,
       status: req.query.status as any,
+      category: req.query.category as string,
+      tags: req.query.tags as string,
+      isFeatured: req.query.isFeatured === 'true' ? true : req.query.isFeatured === 'false' ? false : undefined,
       sortBy: req.query.sortBy as any,
       sortOrder: req.query.sortOrder as any,
       page: req.query.page ? parseInt(req.query.page as string) : undefined,
@@ -93,6 +97,26 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response): Pro
 
     const eventData: CreateEventData = req.body;
     const newEvent = await eventService.createEvent(user.id, eventData);
+
+    // Send confirmation email to event creator
+    try {
+      const userProfile = await eventService.getEventCreator(user.id);
+      if (userProfile) {
+        await emailService.sendEventConfirmation({
+          creatorName: `${userProfile.firstName} ${userProfile.lastName}`,
+          creatorEmail: userProfile.email,
+          eventTitle: newEvent.title,
+          eventDate: newEvent.eventDate,
+          eventTime: newEvent.eventTime,
+          eventLocation: newEvent.location,
+          eventId: newEvent.id,
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send event confirmation email:', emailError);
+      // Don't fail the request if email fails
+    }
+
     res.status(201).json(newEvent);
   } catch (error) {
     console.error('Error creating event:', error);
@@ -157,13 +181,16 @@ router.get('/creator/my-events', authenticateToken, async (req: AuthRequest, res
       res.status(401).json({ message: 'Authentication required' });
       return;
     }
-    
+
     const filters: EventFilters = {
       search: req.query.search as string,
       location: req.query.location as string,
       startDate: req.query.startDate as string,
       endDate: req.query.endDate as string,
       status: req.query.status as any,
+      category: req.query.category as string,
+      tags: req.query.tags as string,
+      isFeatured: req.query.isFeatured === 'true' ? true : req.query.isFeatured === 'false' ? false : undefined,
       sortBy: req.query.sortBy as any,
       sortOrder: req.query.sortOrder as any,
       page: req.query.page ? parseInt(req.query.page as string) : undefined,

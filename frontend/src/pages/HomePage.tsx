@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { eventService, Event, EventFilters } from '../services/eventService';
+import { getImageUrl } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { Search, Calendar, MapPin, Clock, Star, Users, TrendingUp, Sparkles, Shield, Zap, ArrowRight, ChevronRight, Check } from 'lucide-react';
 
@@ -397,7 +398,7 @@ export function HomePage() {
                   <div className="relative w-full h-56 overflow-hidden bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
                     {event.imageUrl ? (
                       <img
-                        src={event.imageUrl}
+                        src={getImageUrl(event.imageUrl) || ''}
                         alt={event.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />

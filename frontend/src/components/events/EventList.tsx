@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Event, eventService } from '../../services/eventService';
+import { DateRangePicker } from '../ui/date-range-picker';
+import { Event, EventFilters, eventService } from '../../services/eventService';
+import { getImageUrl } from '../../services/api';
 import {
-  Calendar,
+  Calendar as CalendarIcon,
   MapPin,
   Clock,
   Star,
@@ -16,157 +21,143 @@ import {
   Heart,
   Share2,
   ChevronDown,
-  ArrowRight
+  ArrowRight,
+  X
 } from 'lucide-react';
+import { useDebounce } from '../../hooks/useDebounce';
 
-interface ImprovedEventListProps {
-  initialEvents?: Event[];
+interface EventListProps {
   showFilters?: boolean;
 }
 
-export function EventList({ initialEvents = [], showFilters = true }: ImprovedEventListProps) {
-  const [events, setEvents] = useState<Event[]>(initialEvents);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>(initialEvents);
-  const [loading, setLoading] = useState(false);
+export function EventList({ showFilters = true }: EventListProps) {
+  // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedDate, setSelectedDate] = useState('all');
-  const [priceRange, setPriceRange] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [sortBy, setSortBy] = useState('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [savedEvents, setSavedEvents] = useState<Set<string>>(new Set());
 
+  // Advanced filters
+  const [locationFilter, setLocationFilter] = useState('');
+  const [isFeaturedFilter, setIsFeaturedFilter] = useState('all');
+
+  // Debounce search and location for API calls
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const debouncedLocation = useDebounce(locationFilter, 300);
+
+  // Convert DateRange to API format
+  const formatDateForApi = (date: Date): string => {
+    return format(date, 'yyyy-MM-dd');
+  };
+
   const categories = [
-    'all', 'conference', 'workshop', 'seminar', 'networking', 
-    'social', 'sports', 'entertainment', 'education', 'business',
-    'technology', 'health', 'arts', 'music', 'food', 'other'
+    { value: 'all', label: 'All Categories' },
+    { value: 'conference', label: 'Conference' },
+    { value: 'workshop', label: 'Workshop' },
+    { value: 'seminar', label: 'Seminar' },
+    { value: 'networking', label: 'Networking' },
+    { value: 'social', label: 'Social' },
+    { value: 'sports', label: 'Sports' },
+    { value: 'entertainment', label: 'Entertainment' },
+    { value: 'education', label: 'Education' },
+    { value: 'business', label: 'Business' },
+    { value: 'technology', label: 'Technology' },
+    { value: 'health', label: 'Health' },
+    { value: 'arts', label: 'Arts' },
+    { value: 'music', label: 'Music' },
+    { value: 'food', label: 'Food' },
+    { value: 'other', label: 'Other' }
   ];
 
-  const dateFilters = [
-    { value: 'all', label: 'Any Date' },
-    { value: 'today', label: 'Today' },
-    { value: 'week', label: 'This Week' },
-    { value: 'month', label: 'This Month' },
-    { value: 'weekend', label: 'This Weekend' }
-  ];
-
-  const priceFilters = [
-    { value: 'all', label: 'Any Price' },
-    { value: 'free', label: 'Free' },
-    { value: '0-25', label: 'Under $25' },
-    { value: '25-50', label: '$25 - $50' },
-    { value: '50-100', label: '$50 - $100' },
-    { value: '100+', label: '$100+' }
-  ];
-
+  // Sort options that match backend
   const sortOptions = [
-    { value: 'date', label: 'Event Date' },
-    { value: 'popularity', label: 'Most Popular' },
-    { value: 'price-low', label: 'Price: Low to High' },
-    { value: 'price-high', label: 'Price: High to Low' },
-    { value: 'newest', label: 'Newest First' }
+    { value: 'date-asc', label: 'Date (Earliest First)', sortBy: 'date', sortOrder: 'asc' },
+    { value: 'date-desc', label: 'Date (Latest First)', sortBy: 'date', sortOrder: 'desc' },
+    { value: 'title-asc', label: 'Title (A-Z)', sortBy: 'title', sortOrder: 'asc' },
+    { value: 'title-desc', label: 'Title (Z-A)', sortBy: 'title', sortOrder: 'desc' },
+    { value: 'createdAt-desc', label: 'Newest First', sortBy: 'createdAt', sortOrder: 'desc' },
+    { value: 'createdAt-asc', label: 'Oldest First', sortBy: 'createdAt', sortOrder: 'asc' },
   ];
 
-  useEffect(() => {
-    if (initialEvents.length === 0) {
-      fetchEvents();
-    }
-  }, []);
+  const featuredOptions = [
+    { value: 'all', label: 'All Events' },
+    { value: 'featured', label: 'Featured Only' },
+    { value: 'regular', label: 'Regular Only' }
+  ];
 
-  useEffect(() => {
-    applyFilters();
-  }, [events, searchTerm, selectedCategory, selectedDate, priceRange, sortBy]);
-
-  const fetchEvents = async () => {
-    setLoading(true);
-    try {
-      const data = await eventService.getEvents({ limit: 50 });
-      setEvents(data.events);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    } finally {
-      setLoading(false);
+  // Handle sort change
+  const handleSortChange = (value: string) => {
+    const option = sortOptions.find(o => o.value === value);
+    if (option) {
+      setSortBy(option.sortBy);
+      setSortOrder(option.sortOrder as 'asc' | 'desc');
     }
   };
 
-  const applyFilters = () => {
-    let filtered = [...events];
+  const currentSortValue = `${sortBy}-${sortOrder}`;
 
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(event =>
-        event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.location.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  // Build filters object for API
+  const buildFilters = (): EventFilters => {
+    const filters: EventFilters = {
+      limit: 50,
+      sortBy: sortBy as 'title' | 'date' | 'createdAt',
+      sortOrder: sortOrder,
+    };
+
+    if (debouncedSearchTerm) {
+      filters.search = debouncedSearchTerm;
+    }
+    if (selectedCategory && selectedCategory !== 'all') {
+      filters.category = selectedCategory;
+    }
+    if (dateRange?.from) {
+      filters.startDate = formatDateForApi(dateRange.from);
+    }
+    if (dateRange?.to) {
+      filters.endDate = formatDateForApi(dateRange.to);
+    }
+    if (debouncedLocation) {
+      filters.location = debouncedLocation;
+    }
+    if (isFeaturedFilter === 'featured') {
+      filters.isFeatured = true;
+    } else if (isFeaturedFilter === 'regular') {
+      filters.isFeatured = false;
     }
 
-    // Category filter
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(event => event.category === selectedCategory);
-    }
-
-    // Date filter
-    if (selectedDate !== 'all') {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
-      filtered = filtered.filter(event => {
-        const eventDate = new Date(event.eventDate);
-        
-        switch (selectedDate) {
-          case 'today':
-            return eventDate.toDateString() === today.toDateString();
-          case 'week':
-            const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-            return eventDate >= today && eventDate <= weekFromNow;
-          case 'month':
-            const monthFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-            return eventDate >= today && eventDate <= monthFromNow;
-          case 'weekend':
-            const saturday = new Date(today);
-            saturday.setDate(today.getDate() + (6 - today.getDay()) + (today.getDay() > 6 ? 7 : 0));
-            const sunday = new Date(saturday.getTime() + 24 * 60 * 60 * 1000);
-            return eventDate >= saturday && eventDate <= sunday;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Price filter (would need ticket data for actual implementation)
-    if (priceRange !== 'all') {
-      // This is a placeholder - would need actual ticket price data
-      filtered = filtered.filter(() => {
-        // For demo, we'll just return all events
-        return true;
-      });
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'date':
-          return new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime();
-        case 'popularity':
-          return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
-        case 'price-low':
-          // Would need actual price data
-          return 0;
-        case 'price-high':
-          // Would need actual price data
-          return 0;
-        case 'newest':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        default:
-          return 0;
-      }
-    });
-
-    setFilteredEvents(filtered);
+    return filters;
   };
 
-  const formatDate = (dateString: string) => {
+  // TanStack Query for fetching events
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['events', debouncedSearchTerm, selectedCategory, dateRange?.from?.toISOString(), dateRange?.to?.toISOString(), sortBy, sortOrder, debouncedLocation, isFeaturedFilter],
+    queryFn: () => eventService.getEvents(buildFilters()),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    keepPreviousData: true,
+  });
+
+  const events = data?.events || [];
+
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
+    return searchTerm !== '' ||
+           selectedCategory !== 'all' ||
+           dateRange !== undefined ||
+           locationFilter !== '' ||
+           isFeaturedFilter !== 'all' ||
+           sortBy !== 'date' ||
+           sortOrder !== 'asc';
+  }, [searchTerm, selectedCategory, dateRange, locationFilter, isFeaturedFilter, sortBy, sortOrder]);
+
+  const formatEventDate = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
     const tomorrow = new Date(today);
@@ -227,41 +218,67 @@ export function EventList({ initialEvents = [], showFilters = true }: ImprovedEv
         url: window.location.origin + `/events/${event.id}`,
       });
     } else {
-      // Fallback - copy to clipboard
       navigator.clipboard.writeText(window.location.origin + `/events/${event.id}`);
     }
   };
 
-  if (loading) {
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('all');
+    setDateRange(undefined);
+    setSortBy('date');
+    setSortOrder('asc');
+    setLocationFilter('');
+    setIsFeaturedFilter('all');
+  };
+
+  if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <Card key={index} className="animate-pulse border-0 shadow-xl overflow-hidden">
-            <div className="h-56 bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100"></div>
-            <CardHeader>
-              <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
-                  <div className="h-4 bg-gray-200 rounded flex-1"></div>
+      <div className="space-y-6">
+        {showFilters && <FiltersSkeleton />}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Card key={index} className="animate-pulse border-0 shadow-xl overflow-hidden">
+              <div className="h-56 bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100"></div>
+              <CardHeader>
+                <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                    <div className="h-4 bg-gray-200 rounded flex-1"></div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                    <div className="h-4 bg-gray-200 rounded flex-1"></div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                    <div className="h-4 bg-gray-200 rounded flex-1"></div>
+                  </div>
+                  <div className="h-10 bg-gray-200 rounded-lg mt-4"></div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
-                  <div className="h-4 bg-gray-200 rounded flex-1"></div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
-                  <div className="h-4 bg-gray-200 rounded flex-1"></div>
-                </div>
-                <div className="h-10 bg-gray-200 rounded-lg mt-4"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="border-2 border-dashed border-red-300 bg-red-50">
+        <CardContent className="text-center py-16">
+          <h3 className="text-xl font-bold mb-3 text-red-900">Error loading events</h3>
+          <p className="text-red-600 mb-4">{(error as Error)?.message || 'Something went wrong'}</p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -276,56 +293,45 @@ export function EventList({ initialEvents = [], showFilters = true }: ImprovedEv
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Input
-                  placeholder="Search events, locations, or categories..."
+                  placeholder="Search events by title, description, or location..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-12 h-12 text-lg"
                 />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
               </div>
 
               {/* Quick Filters */}
               <div className="flex flex-wrap gap-2">
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-full sm:w-auto">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category === 'all' ? 'All Categories' : category.charAt(0).toUpperCase() + category.slice(1)}
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                <Select value={selectedDate} onValueChange={setSelectedDate}>
-                  <SelectTrigger className="w-full sm:w-auto">
-                    <SelectValue placeholder="Date" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dateFilters.map(filter => (
-                      <SelectItem key={filter.value} value={filter.value}>
-                        {filter.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <DateRangePicker
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
+                  className="w-full sm:w-[280px]"
+                  placeholder="Select dates"
+                />
 
-                <Select value={priceRange} onValueChange={setPriceRange}>
-                  <SelectTrigger className="w-full sm:w-auto">
-                    <SelectValue placeholder="Price" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {priceFilters.map(filter => (
-                      <SelectItem key={filter.value} value={filter.value}>
-                        {filter.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-auto">
+                <Select value={currentSortValue} onValueChange={handleSortChange}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
@@ -354,32 +360,24 @@ export function EventList({ initialEvents = [], showFilters = true }: ImprovedEv
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="text-sm font-medium text-gray-700 mb-2 block">Location</label>
-                      <Input placeholder="Enter city or venue" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">Distance</label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Any distance" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="5">Within 5 miles</SelectItem>
-                          <SelectItem value="10">Within 10 miles</SelectItem>
-                          <SelectItem value="25">Within 25 miles</SelectItem>
-                          <SelectItem value="50">Within 50 miles</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        placeholder="Enter city or venue"
+                        value={locationFilter}
+                        onChange={(e) => setLocationFilter(e.target.value)}
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700 mb-2 block">Event Type</label>
-                      <Select>
+                      <Select value={isFeaturedFilter} onValueChange={setIsFeaturedFilter}>
                         <SelectTrigger>
-                          <SelectValue placeholder="All types" />
+                          <SelectValue placeholder="All events" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="inperson">In-Person</SelectItem>
-                          <SelectItem value="online">Online</SelectItem>
-                          <SelectItem value="hybrid">Hybrid</SelectItem>
+                          {featuredOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -394,17 +392,21 @@ export function EventList({ initialEvents = [], showFilters = true }: ImprovedEv
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-gray-600">
-          {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'} found
+          {events.length} {events.length === 1 ? 'event' : 'events'} found
+          {data?.total && data.total > events.length && ` (showing ${events.length} of ${data.total})`}
         </p>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-            Clear Filters
-          </Button>
+          {hasActiveFilters && (
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              <X className="w-4 h-4 mr-1" />
+              Clear Filters
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Events Grid */}
-      {filteredEvents.length === 0 ? (
+      {events.length === 0 ? (
         <Card className="border-2 border-dashed border-gray-300 bg-white/50 backdrop-blur-sm">
           <CardContent className="text-center py-16">
             <div className="w-24 h-24 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -417,12 +419,7 @@ export function EventList({ initialEvents = [], showFilters = true }: ImprovedEv
             <Button
               size="lg"
               className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedCategory('all');
-                setSelectedDate('all');
-                setPriceRange('all');
-              }}
+              onClick={clearFilters}
             >
               Clear All Filters
             </Button>
@@ -430,18 +427,18 @@ export function EventList({ initialEvents = [], showFilters = true }: ImprovedEv
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredEvents.map((event) => (
+          {events.map((event) => (
             <Card key={event.id} className="group overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-0 bg-white">
               <div className="relative w-full h-56 overflow-hidden bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
                 {event.imageUrl ? (
                   <img
-                    src={event.imageUrl}
+                    src={getImageUrl(event.imageUrl) || ''}
                     alt={event.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Calendar className="w-16 h-16 text-indigo-300" />
+                    <CalendarIcon className="w-16 h-16 text-indigo-300" />
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0"></div>
@@ -500,9 +497,9 @@ export function EventList({ initialEvents = [], showFilters = true }: ImprovedEv
                 <div className="space-y-3">
                   <div className="flex items-center text-sm text-gray-600">
                     <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center mr-3">
-                      <Calendar className="w-4 h-4 text-indigo-600" />
+                      <CalendarIcon className="w-4 h-4 text-indigo-600" />
                     </div>
-                    <span className="font-medium">{formatDate(event.eventDate)}</span>
+                    <span className="font-medium">{formatEventDate(event.eventDate)}</span>
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center mr-3">
@@ -532,7 +529,7 @@ export function EventList({ initialEvents = [], showFilters = true }: ImprovedEv
                   </div>
                 )}
                 <Link to={`/events/${event.id}`} className="block">
-                  <Button className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg group/btn">
+                  <Button className="w-full mt-4 bg-gradient-to-r from-indigo-600 text-white to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg group/btn">
                     <span>View Details</span>
                     <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                   </Button>
@@ -543,5 +540,23 @@ export function EventList({ initialEvents = [], showFilters = true }: ImprovedEv
         </div>
       )}
     </div>
+  );
+}
+
+// Skeleton for filters section
+function FiltersSkeleton() {
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-10 w-40 bg-gray-200 rounded animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

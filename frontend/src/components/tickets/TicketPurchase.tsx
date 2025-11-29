@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { eventService, TicketType } from '@/services/eventService';
 import { paymentService, TicketItem } from '@/services/paymentService';
+import { getImageUrl } from '@/services/api';
 import { 
   Calendar, 
   Clock, 
@@ -313,7 +314,7 @@ export function TicketPurchase() {
               <CardContent className="space-y-4">
                 {event.imageUrl && (
                   <img
-                    src={event.imageUrl}
+                    src={getImageUrl(event.imageUrl) || ''}
                     alt={event.title}
                     className="w-full h-48 object-cover rounded-lg"
                   />
@@ -470,7 +471,7 @@ export function TicketPurchase() {
             <CardContent className="space-y-6">
               {event.imageUrl && (
                 <img
-                  src={event.imageUrl}
+                  src={getImageUrl(event.imageUrl) || ''}
                   alt={event.title}
                   className="w-full h-64 object-cover rounded-lg"
                 />

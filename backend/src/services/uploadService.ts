@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs';
+import * as fsSync from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,15 +14,13 @@ class UploadService {
   private uploadDir: string;
 
   constructor() {
-    this.uploadDir = process.env.UPLOAD_PATH || './uploads';
+    this.uploadDir = path.join(process.cwd(), process.env.UPLOAD_PATH || 'uploads');
     this.ensureUploadDirExists();
   }
 
-  private ensureUploadDirExists = async () => {
-    try {
-      await fs.access(this.uploadDir);
-    } catch (error) {
-      await fs.mkdir(this.uploadDir, { recursive: true });
+  private ensureUploadDirExists = () => {
+    if (!fsSync.existsSync(this.uploadDir)) {
+      fsSync.mkdirSync(this.uploadDir, { recursive: true });
       console.log(`Created upload directory: ${this.uploadDir}`);
     }
   };

@@ -130,21 +130,6 @@ export function LoginPage() {
             <LoginForm />
           </div>
 
-          {/* Footer */}
-          <div className="text-center mt-8">
-            <p className="text-sm text-gray-600 mb-4">
-              Don't have an account?{' '}
-              <a href="/register" className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline">
-                Sign up for free
-              </a>
-            </p>
-            <p className="text-xs text-gray-500">
-              By signing in, you agree to our{' '}
-              <a href="#" className="text-indigo-600 hover:underline">Terms</a>
-              {' '}and{' '}
-              <a href="#" className="text-indigo-600 hover:underline">Privacy Policy</a>
-            </p>
-          </div>
         </div>
       </div>
     </div>

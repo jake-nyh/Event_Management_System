@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { customerService } from '../services/customerService';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { qrCodeService } from '../services/qrCodeService';
 
 const router: Router = Router();
 
@@ -145,11 +146,11 @@ router.post('/tickets/:id/use', authenticateToken, async (req: AuthRequest, res:
     }
 
     const { id } = req.params;
-    
+
     // For demo purposes, we'll allow any authenticated user to mark tickets as used
     // In a real app, this would be restricted to event organizers
     const result = await customerService.markTicketAsUsed(id);
-    
+
     if (result.success) {
       return res.json({
         success: true,
@@ -167,6 +168,110 @@ router.post('/tickets/:id/use', authenticateToken, async (req: AuthRequest, res:
     return res.status(500).json({
       success: false,
       message: error.message || 'Failed to mark ticket as used',
+    });
+  }
+});
+
+// Regenerate QR code for a ticket
+router.post('/tickets/:id/regenerate-qr', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+    }
+
+    const { id } = req.params;
+
+    // Verify the ticket belongs to the user
+    const ticket = await customerService.getTicketById(id, req.user.id);
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket not found or access denied',
+      });
+    }
+
+    // Generate QR code for this ticket
+    const result = await qrCodeService.generateQRCode(id);
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        data: {
+          qrCode: result.qrCode,
+          qrCodeImage: result.qrCodeImage,
+        },
+        message: 'QR code generated successfully',
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: result.error || 'Failed to generate QR code',
+      });
+    }
+  } catch (error: any) {
+    console.error('Error regenerating QR code:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to regenerate QR code',
+    });
+  }
+});
+
+// Regenerate QR codes for all tickets without QR codes
+router.post('/tickets/regenerate-all-qr', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+    }
+
+    // Get all tickets for the user
+    const tickets = await customerService.getCustomerTickets(req.user.id);
+
+    // Filter tickets without QR codes
+    const ticketsWithoutQR = tickets.filter(t => !t.qrCode);
+
+    if (ticketsWithoutQR.length === 0) {
+      return res.json({
+        success: true,
+        data: { regenerated: 0 },
+        message: 'All tickets already have QR codes',
+      });
+    }
+
+    // Generate QR codes for each ticket
+    const results = [];
+    for (const ticket of ticketsWithoutQR) {
+      const result = await qrCodeService.generateQRCode(ticket.id);
+      results.push({
+        ticketId: ticket.id,
+        success: result.success,
+        error: result.error,
+      });
+    }
+
+    const successCount = results.filter(r => r.success).length;
+
+    return res.json({
+      success: true,
+      data: {
+        regenerated: successCount,
+        total: ticketsWithoutQR.length,
+        results,
+      },
+      message: `Generated QR codes for ${successCount} of ${ticketsWithoutQR.length} tickets`,
+    });
+  } catch (error: any) {
+    console.error('Error regenerating QR codes:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to regenerate QR codes',
     });
   }
 });

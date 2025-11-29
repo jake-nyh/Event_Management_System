@@ -4,8 +4,22 @@ import { eq } from 'drizzle-orm';
 import QRCode from 'qrcode';
 
 export class QRCodeService {
-  // Generate QR code for a ticket
-  async generateQRCode(ticketId: string): Promise<{ success: boolean; qrCode?: string; error?: string }> {
+  // Generate QR code as base64 data URL locally
+  async generateQRCodeImage(qrData: string): Promise<string> {
+    return await QRCode.toDataURL(qrData, {
+      errorCorrectionLevel: 'H',
+      type: 'image/png',
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF',
+      },
+      width: 256,
+    });
+  }
+
+  // Generate QR code for a ticket - stores compact data, generates image on demand
+  async generateQRCode(ticketId: string): Promise<{ success: boolean; qrCode?: string; qrCodeImage?: string; error?: string }> {
     try {
       // Get ticket details
       const [ticket] = await db
@@ -18,43 +32,73 @@ export class QRCodeService {
         return { success: false, error: 'Ticket not found' };
       }
 
-      // Generate QR code data (for demo purposes, we'll include ticket ID and status)
+      // Generate compact QR code data (just the ticket ID is enough for validation)
       const qrData = JSON.stringify({
-        ticketId: ticket.id,
-        ticketType: ticket.ticketTypeId,
-        status: ticket.status,
-        timestamp: new Date().toISOString(),
-        // In a real app, you might include more secure data
-        // like encrypted ticket information
+        t: ticket.id,
+        tt: ticket.ticketTypeId,
+        s: ticket.status,
       });
 
-      // Generate QR code as base64
-      const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
-        errorCorrectionLevel: 'H',
-        type: 'image/png',
-        margin: 1,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-        width: 256,
-      });
-
-      // Update ticket with QR code
+      // Update ticket with QR code DATA (not image)
       await db
         .update(tickets)
-        .set({ qrCode: qrCodeDataUrl })
+        .set({ qrCode: qrData })
         .where(eq(tickets.id, ticketId));
+
+      // Generate the image locally
+      const qrCodeImage = await this.generateQRCodeImage(qrData);
 
       return {
         success: true,
-        qrCode: qrCodeDataUrl,
+        qrCode: qrData,
+        qrCodeImage: qrCodeImage,
       };
     } catch (error) {
       console.error('Error generating QR code:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to generate QR code',
+      };
+    }
+  }
+
+  // Get QR code image for a ticket (generates from stored data or returns existing image)
+  async getTicketQRCodeImage(ticketId: string): Promise<{ success: boolean; qrCodeImage?: string; error?: string }> {
+    try {
+      const [ticket] = await db
+        .select()
+        .from(tickets)
+        .where(eq(tickets.id, ticketId))
+        .limit(1);
+
+      if (!ticket) {
+        return { success: false, error: 'Ticket not found' };
+      }
+
+      if (!ticket.qrCode) {
+        return { success: false, error: 'QR code not generated yet' };
+      }
+
+      // Check if qrCode is already a base64 image (old format)
+      if (ticket.qrCode.startsWith('data:image/png;base64,')) {
+        return {
+          success: true,
+          qrCodeImage: ticket.qrCode,
+        };
+      }
+
+      // Generate image from stored compact JSON data (new format)
+      const qrCodeImage = await this.generateQRCodeImage(ticket.qrCode);
+
+      return {
+        success: true,
+        qrCodeImage: qrCodeImage,
+      };
+    } catch (error) {
+      console.error('Error getting QR code image:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get QR code image',
       };
     }
   }
@@ -70,7 +114,9 @@ export class QRCodeService {
         return { success: false, error: 'Invalid QR code format' };
       }
 
-      if (!parsedData.ticketId) {
+      // Support both old format (ticketId) and new compact format (t)
+      const ticketId = parsedData.ticketId || parsedData.t;
+      if (!ticketId) {
         return { success: false, error: 'Invalid QR code data' };
       }
 
@@ -78,7 +124,7 @@ export class QRCodeService {
       const [ticket] = await db
         .select()
         .from(tickets)
-        .where(eq(tickets.id, parsedData.ticketId))
+        .where(eq(tickets.id, ticketId))
         .limit(1);
 
       if (!ticket) {
@@ -87,17 +133,12 @@ export class QRCodeService {
 
       // Check if ticket is still valid
       if (ticket.status !== 'active') {
-        return { 
-          success: false, 
+        return {
+          success: false,
           error: `Ticket is ${ticket.status}`,
-          ticket 
+          ticket
         };
       }
-
-      // In a real app, you might want to check:
-      // - Event date/time
-      // - Ticket expiration
-      // - Anti-fraud measures
 
       return {
         success: true,
@@ -113,7 +154,7 @@ export class QRCodeService {
   }
 
   // Generate QR codes for multiple tickets
-  async generateMultipleQRCodes(ticketIds: string[]): Promise<{ success: boolean; results: Array<{ ticketId: string; success: boolean; qrCode?: string; error?: string }> }> {
+  async generateMultipleQRCodes(ticketIds: string[]): Promise<{ success: boolean; results: Array<{ ticketId: string; success: boolean; qrCode?: string; qrCodeImage?: string; error?: string }> }> {
     const results = [];
 
     for (const ticketId of ticketIds) {
@@ -122,6 +163,7 @@ export class QRCodeService {
         ticketId,
         success: result.success,
         qrCode: result.qrCode,
+        qrCodeImage: result.qrCodeImage,
         error: result.error,
       });
     }
@@ -133,7 +175,7 @@ export class QRCodeService {
   }
 
   // Create QR code for event check-in (for organizers)
-  async createEventCheckInQR(eventId: string, organizerId: string): Promise<{ success: boolean; qrCode?: string; error?: string }> {
+  async createEventCheckInQR(eventId: string, organizerId: string): Promise<{ success: boolean; qrCode?: string; qrCodeImage?: string; error?: string }> {
     try {
       // Generate QR code data for event check-in
       const qrData = JSON.stringify({
@@ -141,25 +183,14 @@ export class QRCodeService {
         eventId,
         organizerId,
         timestamp: new Date().toISOString(),
-        // In a real app, this would include more secure data
-        // and possibly a one-time use token
       });
 
-      // Generate QR code
-      const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
-        errorCorrectionLevel: 'H',
-        type: 'image/png',
-        margin: 1,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-        width: 256,
-      });
+      const qrCodeImage = await this.generateQRCodeImage(qrData);
 
       return {
         success: true,
-        qrCode: qrCodeDataUrl,
+        qrCode: qrData,
+        qrCodeImage: qrCodeImage,
       };
     } catch (error) {
       console.error('Error creating event check-in QR:', error);

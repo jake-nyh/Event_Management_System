@@ -1,0 +1,1 @@
+ALTER TABLE "tickets" DROP CONSTRAINT "tickets_qr_code_unique";

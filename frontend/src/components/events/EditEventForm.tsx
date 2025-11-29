@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { eventService, CreateEventData, CreateTicketType } from '@/services/eventService';
+import { getImageUrl } from '@/services/api';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 
 const eventSchema = z.object({
@@ -46,6 +47,7 @@ export function EditEventForm() {
   ]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -166,7 +168,8 @@ export function EditEventForm() {
       }
       
       setImageFile(file);
-      
+      setImageRemoved(false);
+
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -179,6 +182,7 @@ export function EditEventForm() {
   const clearImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setImageRemoved(true);
   };
 
   const validateTicketTypes = (): boolean => {
@@ -344,7 +348,7 @@ export function EditEventForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a category" />
@@ -403,7 +407,7 @@ export function EditEventForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Featured Event</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(value === 'true')} defaultValue={field.value ? 'true' : 'false'}>
+                    <Select onValueChange={(value) => field.onChange(value === 'true')} value={field.value ? 'true' : 'false'}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select featured status" />
@@ -423,15 +427,15 @@ export function EditEventForm() {
               />
 
                <div className="space-y-4">
-                <FormLabel>Event Image</FormLabel>
-                <FormDescription>
+                <label className="text-sm font-medium">Event Image</label>
+                <p className="text-sm text-muted-foreground">
                   Upload a new image for your event. This will replace the current image.
-                </FormDescription>
+                </p>
                 
-                {imagePreview || event?.imageUrl ? (
+                {imagePreview || (event?.imageUrl && !imageRemoved) ? (
                   <div className="relative">
                     <img
-                      src={imagePreview || event?.imageUrl}
+                      src={imagePreview || getImageUrl(event?.imageUrl) || ''}
                       alt="Event preview"
                       className="w-full h-64 object-cover rounded-lg border"
                     />
@@ -521,7 +525,7 @@ export function EditEventForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || 'draft'}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />

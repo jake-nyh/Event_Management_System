@@ -4,6 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { NewTransaction, NewTicket, NewUser } from '../database/schema';
 import { v4 as uuidv4 } from 'uuid';
 import { emailService, TicketPurchaseEmailData } from './emailService';
+import { qrCodeService } from './qrCodeService';
 
 export interface CreatePaymentIntentData {
   eventId: string;
@@ -175,7 +176,9 @@ export class PaymentService {
         } as NewTransaction)
         .returning();
       
-      // Create ticket records
+      // Create ticket records and collect ticket IDs for QR generation
+      const createdTicketIds: string[] = [];
+
       for (const item of ticketItemsParsed) {
         // Update ticket type quantity
         const [ticketType] = await db
@@ -183,11 +186,11 @@ export class PaymentService {
           .from(ticketTypes)
           .where(eq(ticketTypes.id, item.ticketTypeId))
           .limit(1);
-        
+
         if (ticketType.quantityAvailable < item.quantity) {
           throw new Error(`Not enough tickets available for ${ticketType.name}`);
         }
-        
+
         await db
           .update(ticketTypes)
           .set({
@@ -195,20 +198,41 @@ export class PaymentService {
             quantitySold: (ticketType.quantitySold || 0) + item.quantity,
           })
           .where(eq(ticketTypes.id, item.ticketTypeId));
-        
+
         // Create individual ticket records
         for (let i = 0; i < item.quantity; i++) {
+          const ticketId = uuidv4();
           await db.insert(tickets).values({
-            id: uuidv4(),
+            id: ticketId,
             ticketTypeId: item.ticketTypeId,
-            customerId: customerId, // Use the actual customer ID, not the mock one
+            customerId: customerId,
             transactionId: transaction.id,
-            qrCode: `QR_${uuidv4()}`, // Mock QR code
+            qrCode: null, // Will be updated after QR generation
             status: 'active',
           } as NewTicket);
+          createdTicketIds.push(ticketId);
         }
       }
-      
+
+      // Generate QR codes for all tickets
+      const qrCodes: string[] = [];
+      console.log(`Generating QR codes for ${createdTicketIds.length} tickets...`);
+      for (const ticketId of createdTicketIds) {
+        try {
+          const qrResult = await qrCodeService.generateQRCode(ticketId);
+          console.log(`QR generation for ticket ${ticketId}: success=${qrResult.success}, hasImage=${!!qrResult.qrCodeImage}`);
+          if (qrResult.success && qrResult.qrCodeImage) {
+            // Use qrCodeImage (base64 data URL) for email, not qrCode (JSON data)
+            qrCodes.push(qrResult.qrCodeImage);
+          } else if (!qrResult.success) {
+            console.error(`QR generation failed for ticket ${ticketId}: ${qrResult.error}`);
+          }
+        } catch (qrError) {
+          console.error('Error generating QR code for ticket:', ticketId, qrError);
+        }
+      }
+      console.log(`Total QR codes generated: ${qrCodes.length}`);
+
       // Update payment intent status
       paymentIntent.status = 'succeeded';
       this.mockPaymentIntents.set(paymentIntentId, paymentIntent);
@@ -240,8 +264,15 @@ export class PaymentService {
             }
           }
           
+          // Get customer name if available
+          const [customer] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, customerId))
+            .limit(1);
+
           const emailData: TicketPurchaseEmailData = {
-            customerName: 'Customer', // Would need to get from user table
+            customerName: customer ? `${customer.firstName} ${customer.lastName}` : 'Customer',
             customerEmail,
             eventTitle: event.title,
             eventDate: event.eventDate.toString(),
@@ -249,9 +280,10 @@ export class PaymentService {
             eventLocation: event.location,
             tickets: ticketDetails,
             totalAmount: totalAmount,
-            transactionId: transaction.id
+            transactionId: transaction.id,
+            qrCodes: qrCodes.length > 0 ? qrCodes : undefined,
           };
-          
+
           await emailService.sendTicketPurchaseConfirmation(emailData);
         }
       } catch (emailError) {

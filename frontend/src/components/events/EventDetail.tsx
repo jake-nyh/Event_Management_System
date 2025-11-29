@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { eventService } from '@/services/eventService';
+import { getImageUrl } from '@/services/api';
 import { Calendar, MapPin, Clock, ArrowLeft, Edit, Trash2, User, Star, Tag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -180,7 +181,7 @@ export function EventDetail() {
           {event.imageUrl && (
             <div className="w-full">
               <img
-                src={event.imageUrl}
+                src={getImageUrl(event.imageUrl) || ''}
                 alt={event.title}
                 className="w-full h-64 object-cover rounded-lg"
               />
@@ -252,7 +253,7 @@ export function EventDetail() {
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-medium">{ticketType.name}</h4>
-                        <p className="text-2xl font-bold text-primary mt-1">
+                        <p className="text-2xl font-bold text-indigo-600 mt-1">
                           ${parseFloat(ticketType.price).toFixed(2)}
                         </p>
                         <p className="text-sm text-gray-500 mt-1">

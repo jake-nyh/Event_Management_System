@@ -90,6 +90,11 @@ export class EmailService {
   // Send email method
   async sendEmail(emailData: EmailData): Promise<{ success: boolean; error?: string }> {
     try {
+      console.log('=== EMAIL SENDING STARTED ===');
+      console.log('To:', emailData.to);
+      console.log('Subject:', emailData.subject);
+      console.log('Has attachments:', emailData.attachments?.length || 0);
+
       const mailOptions = {
         from: `"${process.env.EMAIL_FROM_NAME || 'Event Management System'}" <${process.env.EMAIL_USER}>`,
         to: emailData.to,
@@ -99,15 +104,19 @@ export class EmailService {
         attachments: emailData.attachments,
       };
 
+      console.log('Mail options prepared, sending...');
       const info = await this.transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', info.messageId);
-      
+      console.log('=== EMAIL SENT SUCCESSFULLY ===');
+      console.log('Message ID:', info.messageId);
+      console.log('Response:', info.response);
+
       return { success: true };
     } catch (error) {
-      console.error('Error sending email:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to send email' 
+      console.error('=== EMAIL SENDING FAILED ===');
+      console.error('Error details:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to send email'
       };
     }
   }
@@ -117,11 +126,28 @@ export class EmailService {
     const html = this.generateTicketPurchaseTemplate(data);
     const text = this.generateTicketPurchaseTextTemplate(data);
 
+    // Create attachments from QR codes
+    const attachments: Array<{ filename: string; content: Buffer | string; contentType?: string; cid?: string }> = [];
+
+    if (data.qrCodes && data.qrCodes.length > 0) {
+      data.qrCodes.forEach((qrCode, index) => {
+        // QR code is base64 data URL like "data:image/png;base64,..."
+        const base64Data = qrCode.replace(/^data:image\/png;base64,/, '');
+        attachments.push({
+          filename: `ticket-qr-${index + 1}.png`,
+          content: Buffer.from(base64Data, 'base64'),
+          contentType: 'image/png',
+          cid: `qrcode${index}`, // Content ID for inline display
+        });
+      });
+    }
+
     return this.sendEmail({
       to: data.customerEmail,
-      subject: `Ticket Purchase Confirmation - ${data.eventTitle}`,
+      subject: `🎫 Ticket Purchase Confirmation - ${data.eventTitle}`,
       html,
       text,
+      attachments: attachments.length > 0 ? attachments : undefined,
     });
   }
 
@@ -226,8 +252,31 @@ export class EmailService {
             </div>
             
             <p><strong>Important:</strong> Please bring a valid ID and this confirmation email to the event.</p>
-            ${data.qrCodes ? `
-              <p><strong>Digital Tickets:</strong> Your QR codes have been generated and are attached to this email.</p>
+
+            ${data.qrCodes && data.qrCodes.length > 0 ? `
+              <div style="margin-top: 30px; padding: 20px; background: white; border-radius: 8px; border: 2px dashed #4f46e5;">
+                <h2 style="color: #4f46e5; margin-bottom: 20px;">📱 Your Digital Tickets</h2>
+                <p style="margin-bottom: 20px;">Show these QR codes at the event entrance for check-in:</p>
+
+                <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                  <p style="margin: 0; color: #92400e; font-size: 14px;">
+                    <strong>📎 QR codes are attached to this email.</strong><br/>
+                    If images don't display below, please check the email attachments or log in to your account and go to "My Tickets" to download your QR codes.
+                  </p>
+                </div>
+
+                <div style="text-align: center;">
+                  ${data.qrCodes.map((qr, index) => `
+                    <div style="display: inline-block; text-align: center; padding: 15px; background: #f9fafb; border-radius: 8px; margin: 10px;">
+                      <img src="cid:qrcode${index}" alt="Ticket QR Code ${index + 1}" width="200" height="200" style="width: 200px; height: 200px; border-radius: 8px; display: block;" />
+                      <p style="margin-top: 10px; font-weight: bold; color: #4f46e5;">Ticket #${index + 1}</p>
+                    </div>
+                  `).join('')}
+                </div>
+                <p style="margin-top: 20px; font-size: 12px; color: #666;">
+                  💡 Tip: You can also find your tickets in "My Tickets" section of your account.
+                </p>
+              </div>
             ` : ''}
           </div>
           <div class="footer">
