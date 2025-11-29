@@ -28,6 +28,10 @@ import { notFound } from './middleware/notFound';
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy - required for Railway/Render deployment with rate limiting
+// Railway/Render use reverse proxies and set X-Forwarded-For headers
+app.set('trust proxy', 1);
+
 // Rate limiting - more permissive in development
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const limiter = rateLimit({
@@ -35,6 +39,8 @@ const limiter = rateLimit({
   max: isDevelopment ? 1000 : parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // 1000 in dev, 100 in prod
   message: 'Too many requests from this IP, please try again later.',
   skip: () => isDevelopment, // Skip rate limiting entirely in development
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
 // Middleware
